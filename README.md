@@ -1,2 +1,2 @@
-# wm-cordova-file-plugin
+# wm-cordova-plugin-file
 Provides additional API to Cordova file plugin.

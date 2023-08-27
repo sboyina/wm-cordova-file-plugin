@@ -1,0 +1,25 @@
+{
+  "name": "wm-cordova-plugin-file",
+  "version": "1.0.0",
+  "description": "Cordova plugin that exposes API to select images, videos, audio and files.",
+  "types": "",
+  "cordova": {
+    "id": "wm-cordova-plugin-file",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wavemaker/wm-cordova-plugin-file"
+  },
+  "bugs": {
+    "url": ""
+  },
+  "keywords": [],
+  "scripts": {},
+  "author": "Apache Software Foundation",
+  "license": "Apache-2.0",
+  "devDependencies": {}
+}
