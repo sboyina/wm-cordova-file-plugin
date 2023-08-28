@@ -1,7 +1,7 @@
 {
   "name": "wm-cordova-plugin-file",
-  "version": "1.0.0",
-  "description": "Cordova plugin that exposes API to select images, videos, audio and files.",
+  "version": "1.0.1",
+  "description": "Provides additional API to Cordova file plugin.",
   "types": "",
   "cordova": {
     "id": "wm-cordova-plugin-file",
