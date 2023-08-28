@@ -89,7 +89,19 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
         return true;
     }
 
-    public void closeQuietly(Closeable stream) {
+    private void copyToDownloads() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(this.fileType);
+        intent.putExtra(Intent.EXTRA_TITLE, fileName);
+
+        // Optionally, specify a URI for the directory that should be opened in
+        // the system file picker when your app creates the document.
+        intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS));
+        this.cordova.startActivityForResult(this, intent, FILE_REQUEST_CODE);
+    }
+
+    private void closeQuietly(Closeable stream) {
         try {
             if (stream != null) {
                 stream.close();
@@ -131,21 +143,7 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
         return returnValue;
     }
 
-    public void copyToDownloads() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            this.copyToDownloadsWithNewApi();
-        } else {
-            if (this.cordova.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                this.copyToDownloadsWithOldApi();
-            } else {
-                this.cordova.requestPermission(this,
-                        WRITE_PERMISSION_REQUEST_CODE,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            }
-        }
-    }
-
-    public void copyToStream(OutputStream os) throws IOException {
+    private void copyToStream(OutputStream os) throws IOException {
         InputStream is = null;
         try {
             is = this.getInputStreamFromUriString(src);
@@ -159,7 +157,7 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
         }
     }
 
-    public void copyFromUri(Uri uri) {
+    private void copyFromUri(Uri uri) {
         try {
             OutputStream os = this.cordova.getContext().getContentResolver().openOutputStream(uri);
             this.copyToStream(os);
@@ -172,48 +170,6 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
         }
     }
 
-    public String getFileName(String fileName) {
-        int slashIndex = fileName.lastIndexOf('/');
-        int e = fileName.lastIndexOf('.');
-        String plainName = fileName;
-        String ext = null;
-        if (e >= 0 && e > slashIndex) {
-            plainName = fileName.substring(0, e);
-            ext = fileName.substring(e);
-        }
-        int i = 1;
-        while(new File(fileName).exists()) {
-            fileName = plainName + (i++) + (ext != null ? ext : "");
-        }
-        return fileName;
-    }
-
-    public void copyToDownloadsWithOldApi() {
-        try {
-            String destFile = this.getFileName(Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)
-                    + "/" + fileName);
-            this.copyToStream(new FileOutputStream(new File(destFile)));
-            callbackContext.success();
-        } catch (IOException e) {
-            callbackContext.error("Failed to copy due to an Exception: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            this.callbackContext = null;
-        }
-    }
-
-    public void copyToDownloadsWithNewApi() {
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(this.fileType);
-        intent.putExtra(Intent.EXTRA_TITLE, fileName);
-
-        // Optionally, specify a URI for the directory that should be opened in
-        // the system file picker when your app creates the document.
-        intent.putExtra(DocumentsContract.EXTRA_INITIAL_URI, Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS));
-        this.cordova.startActivityForResult(this, intent, FILE_REQUEST_CODE);
-    }
-
     @Override
     public Bundle onSaveInstanceState() {
         Bundle state = new Bundle();
@@ -222,31 +178,6 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
         return state;
     }
 
-    @Override
-    public void requestPermissions(int requestCode) {
-        super.requestPermissions(requestCode);
-    }
-
-    @Override
-    public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
-        this.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
-        switch (requestCode) {
-            case WRITE_PERMISSION_REQUEST_CODE: {
-                if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    this.copyToDownloadsWithOldApi();
-                } else {
-                    this.callbackContext.error("Permission denied");
-                }
-                break;
-            }
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
 
     @Override
     public void onRestoreStateForActivityResult(Bundle state, CallbackContext callbackContext) {
@@ -261,7 +192,8 @@ public class CopyToDownloadsPlugin extends CordovaPlugin {
             if (resultCode == Activity.RESULT_OK) {
                 this.copyFromUri(intent.getData());
             } else if (resultCode == Activity.RESULT_CANCELED) {
-
+                this.callbackContext.error("User Cancelled");
+                this.callbackContext = null;
             }
         }
         super.onActivityResult(requestCode, resultCode, intent);
